@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b10">
+<title>Дом</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#070b10; --card:rgba(17,25,33,.92); --line:rgba(40,58,74,.9);
+  --text:#e9f0f5; --mut:#7d93a6; --ok:#4cc38a; --warn:#e6b455; --crit:#e2695f;
+  --blue:#58c4dc; --violet:#9d8cff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:
+  radial-gradient(1100px 620px at 8% -12%, #0f2431 0%, transparent 58%),
+  radial-gradient(900px 520px at 108% -6%, #201630 0%, transparent 52%),
+  radial-gradient(700px 500px at 50% 120%, #0c1a1a 0%, transparent 60%), var(--bg);
+  color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;overflow:hidden}
+a{color:inherit;text-decoration:none}
+header{height:64px;display:flex;align-items:center;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);
+  background:rgba(7,11,16,.72);backdrop-filter:blur(10px);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;min-width:132px}
+.brand b{font-size:20px;letter-spacing:.16em}
+.clockbox{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+#clock{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+#date{color:var(--mut);font-size:13px;text-transform:capitalize}
+nav{display:flex;gap:5px;flex-wrap:nowrap}
+nav a{padding:8px 13px;border-radius:11px;font-size:13.5px;color:var(--mut);border:1px solid transparent;white-space:nowrap}
+nav a.on{color:var(--text);background:rgba(30,48,66,.75);border-color:rgba(60,92,120,.7)}
+nav a:active{background:rgba(40,60,80,.9)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--ok);box-shadow:0 0 9px var(--ok)}
+.dot.bad{background:var(--crit);box-shadow:0 0 9px var(--crit)}
+#main{height:calc(100% - 64px);overflow-y:auto;padding:14px 18px 26px;scrollbar-width:thin}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+.grid.tight{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:linear-gradient(180deg,var(--card) 0%,rgba(12,18,24,.92) 100%);border:1px solid var(--line);
+  border-radius:18px;padding:14px 16px;min-height:112px;display:flex;flex-direction:column;gap:6px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04)}
+.card.wide{grid-column:span 2}
+.card.tight{padding:10px 12px;min-height:0}
+.lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.big{font-size:clamp(26px,3.6vh,40px);font-weight:650;line-height:1.05;font-variant-numeric:tabular-nums}
+.big.sm{font-size:clamp(19px,2.3vh,25px)}
+.sub{font-size:12.5px;color:var(--mut);line-height:1.35}
+.sub b{color:var(--text);font-weight:600}
+.gauges{display:flex;align-items:center;gap:14px}
+.ring{width:84px;height:84px;flex:0 0 84px}
+.ring-bg{fill:none;stroke:rgba(40,58,74,.8);stroke-width:9}
+.ring-fg{fill:none;stroke-width:9;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;
+  transition:stroke-dashoffset .6s ease}
+.ring-t{fill:var(--text);font-size:19px;font-weight:650;text-anchor:middle;dominant-baseline:central;
+  font-variant-numeric:tabular-nums}
+.spark{width:100%;height:38px;display:block;margin-top:auto}
+.spark path{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.bar{height:6px;background:rgba(40,58,74,.55);border-radius:4px;overflow:hidden;margin-top:auto}
+.bar>i{display:block;height:100%;width:0;border-radius:4px;background:var(--ok);transition:width .5s ease}
+.bar>i.warn{background:var(--warn)} .bar>i.crit{background:var(--crit)} .bar>i.blue{background:var(--blue)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;
+  border-bottom:1px dashed rgba(40,58,74,.5);font-size:14px}
+.row:last-child{border-bottom:0}
+.row .n{color:var(--mut);font-size:13px}
+.pill{font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(40,58,74,.45);color:var(--mut);white-space:nowrap}
+.pill.ok{background:rgba(76,195,138,.16);color:var(--ok)}
+.pill.bad{background:rgba(226,105,95,.16);color:var(--crit)}
+.pill.warn{background:rgba(230,180,85,.16);color:var(--warn)}
+h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:20px 0 10px;font-weight:600}
+h2:first-child{margin-top:2px}
+.wx{display:flex;align-items:center;gap:14px}
+.wx .t{font-size:clamp(34px,5vh,54px);font-weight:650;line-height:1}
+.wx .ic{line-height:0;display:flex;align-items:center}
+.wxi{width:clamp(36px,5vh,52px);height:clamp(36px,5vh,52px)}
+.days{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.day{flex:1 1 90px;background:rgba(10,18,24,.85);border:1px solid var(--line);border-radius:12px;padding:9px 10px;text-align:center}
+.day .d{font-size:11px;color:var(--mut);text-transform:capitalize}
+.day .v{font-size:15px;font-weight:600;margin-top:2px}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.file{background:rgba(10,18,24,.85);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.file .thumb{height:112px;background:#08111a center/cover no-repeat;display:flex;align-items:center;justify-content:center;
+  font-size:30px;color:#41586b}
+.file img.thumb{width:100%;object-fit:cover}
+.file .meta{padding:8px 10px;font-size:12px;color:var(--mut);display:flex;justify-content:space-between;gap:8px}
+.file .meta b{color:var(--text);font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mono{font-variant-numeric:tabular-nums}
+.crit-t{color:var(--crit)} .ok-t{color:var(--ok)} .warn-t{color:var(--warn)}
+.banner{display:none;margin:0 0 12px;padding:9px 14px;border-radius:12px;background:rgba(226,105,95,.12);
+  border:1px solid rgba(226,105,95,.35);color:#f0b7b1;font-size:13px}
+body.stale .banner{display:block}
+.btn{appearance:none;border:1px solid rgba(70,105,135,.75);background:linear-gradient(180deg,rgba(34,52,70,.95),rgba(22,34,46,.95));
+  color:var(--text);font-size:13.5px;font-weight:600;padding:11px 14px;border-radius:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  box-shadow:0 4px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05)}
+.btn:active{transform:translateY(1px);background:rgba(46,70,94,.95)}
+.btn.good{border-color:rgba(76,195,138,.6);color:#c8f0dd}
+.btn.danger{border-color:rgba(226,105,95,.6);color:#f3c7c2}
+.btn.violet{border-color:rgba(157,140,255,.55);color:#ded7ff}
+.btnrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:4px}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);opacity:0;
+  background:rgba(18,28,38,.97);border:1px solid var(--line);color:var(--text);padding:11px 18px;border-radius:13px;
+  font-size:14px;max-width:80vw;text-align:center;transition:all .25s ease;pointer-events:none;z-index:20;
+  box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:rgba(226,105,95,.7)}
+.field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+select{appearance:none;background:rgba(22,34,46,.95);color:var(--text);border:1px solid rgba(70,105,135,.75);
+  border-radius:11px;padding:10px 34px 10px 12px;font-size:14px;
+  background-image:linear-gradient(45deg,transparent 50%,#8aa2b5 50%),linear-gradient(135deg,#8aa2b5 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#bcd3e5}
+@media (max-width:820px){
+  header{height:auto;flex-wrap:wrap;padding:10px 12px;gap:10px}
+  .clockbox{margin-right:0;order:3;width:100%}
+  nav{order:2;width:100%;overflow-x:auto}
+  #main{height:calc(100% - 116px)}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card.wide{grid-column:span 2}
+  .ring{width:64px;height:64px;flex-basis:64px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>ДОМ</b><span id="hb"></span><span id="sub"></span></div>
+  <div class="clockbox"><div id="clock">--:--</div><div id="date"></div></div>
+  <nav>
+    <a href="/" data-p="/">Обзор</a>
+    <a href="/pc" data-p="/pc">ПК</a>
+    <a href="/gen" data-p="/gen">Генерация</a>
+    <a href="/services" data-p="/services">Сервисы</a>
+    <a href="/misc" data-p="/misc">Разное</a>
+    <a href="/settings" data-p="/settings">⚙</a>
+  </nav>
+</header>
+<main id="main">
+  <div class="banner">Нет связи с сервером дашборда — показаны последние полученные данные.</div>
+  <div id="view"><div class="card"><div class="lbl">Загрузка</div><div class="big">…</div></div></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+var state = {data:null};
+var MAIN = document.getElementById('view');
+var TOAST = document.getElementById('toast');
+var toastTimer = null;
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function bytes(b){
+  b = Number(b)||0; if(!b) return '—';
+  var gb = b/1073741824;
+  if(gb >= 1024) return (gb/1024).toFixed(1)+' ТБ';
+  if(gb >= 100) return Math.round(gb)+' ГБ';
+  if(gb >= 10) return gb.toFixed(0)+' ГБ';
+  return gb.toFixed(1)+' ГБ';
+}
+function speed(bps){
+  var v = Number(bps)||0, u=['Б/с','КБ/с','МБ/с','ГБ/с'], i=0;
+  while(v>=1024 && i<u.length-1){ v/=1024; i++; }
+  return (v<10?v.toFixed(1):Math.round(v))+' '+u[i];
+}
+function dur(s){
+  s = Math.floor(Number(s)||0);
+  var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+  if(d) return d+' д '+h+' ч';
+  if(h) return h+' ч '+m+' мин';
+  return m+' мин';
+}
+function color(p){ return p>=88?'#e2695f':(p>=70?'#e6b455':'#4cc38a'); }
+function pctText(p){ return (Number(p)||0).toFixed(0)+'%'; }
+function diskUsage(d){ return d&&d.total ? (1-d.free/d.total)*100 : 0; }
+
+function ring(p, col){
+  p = Math.max(0, Math.min(100, Number(p)||0));
+  var r=40, c=2*Math.PI*r, off=c*(1-p/100);
+  return '<svg class="ring" viewBox="0 0 100 100">'+
+    '<circle class="ring-bg" cx="50" cy="50" r="'+r+'"/>'+
+    '<circle class="ring-fg" cx="50" cy="50" r="'+r+'" stroke="'+(col||color(p))+'" '+
+      'stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
+    '<text x="50" y="50" class="ring-t">'+(p<10?num(p,1):Math.round(p))+'%</text></svg>';
+}
+function spark(vals, col){
+  if(!vals || vals.length<2) return '<div class="spark"></div>';
+  var w=200,h=38,n=vals.length,step=w/(n-1),d='';
+  for(var i=0;i<n;i++){
+    var v=Math.max(0,Math.min(100,Number(vals[i])||0));
+    d += (i?'L':'M') + (i*step).toFixed(1) + ' ' + (h-(v/100)*h).toFixed(1);
+  }
+  return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">'+
+    '<path d="'+d+'" stroke="'+(col||'#58c4dc')+'"/></svg>';
+}
+function gauge(label, p, sub, hist, col){
+  return '<div class="card"><div class="lbl">'+label+'</div>'+
+    '<div class="gauges">'+ring(p,col)+
+      '<div class="sub">'+(sub||'')+'</div></div>'+
+    spark(hist, col||color(p))+'</div>';
+}
+function tile(label, value, sub){
+  return '<div class="card"><div class="lbl">'+label+'</div><div class="big">'+value+'</div>'+
+    (sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+}
+function wxIcon(kind){
+  var col = {sun:'#e6b455',cloud:'#9fb4c6',rain:'#58c4dc',snow:'#d7ecf7',fog:'#9fb4c6',storm:'#9d8cff'}[kind]||'#9fb4c6';
+  var s = '<svg class="wxi" viewBox="0 0 48 48">';
+  if(kind==='sun'){
+    s += '<circle cx="24" cy="24" r="9" fill="'+col+'"/>';
+    for(var i=0;i<8;i++){
+      var a=i*Math.PI/4;
+      s += '<line x1="'+(24+Math.cos(a)*13).toFixed(1)+'" y1="'+(24+Math.sin(a)*13).toFixed(1)+
+           '" x2="'+(24+Math.cos(a)*18).toFixed(1)+'" y2="'+(24+Math.sin(a)*18).toFixed(1)+
+           '" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round"/>';
+    }
+  } else {
+    s += '<path d="M13 32h21a6.5 6.5 0 0 0 .4-13A9.5 9.5 0 0 0 16.2 17 6.5 6.5 0 0 0 13 32z" fill="'+col+'"/>';
+    if(kind==='rain') s += '<line x1="17" y1="36" x2="15" y2="42" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/><line x1="24" y1="36" x2="22" y2="42" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/><line x1="31" y1="36" x2="29" y2="42" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/>';
+    if(kind==='snow') s += '<circle cx="17" cy="39" r="2.2" fill="'+col+'"/><circle cx="24" cy="42" r="2.2" fill="'+col+'"/><circle cx="31" cy="39" r="2.2" fill="'+col+'"/>';
+    if(kind==='storm') s += '<polygon points="27,34 20,43 25,43 22,48 31,39 26,39" fill="#e6b455"/>';
+    if(kind==='fog') s += '<line x1="14" y1="38" x2="34" y2="38" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/><line x1="17" y1="43" x2="31" y2="43" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/>';
+  }
+  return s + '</svg>';
+}
+function num(v, d){ var n=Number(v); if(isNaN(n)) return '—'; return n.toFixed(d==null?1:d).replace('.', ','); }
+
+function toast(msg, err){
+  TOAST.textContent = msg;
+  TOAST.className = 'toast show' + (err?' err':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ TOAST.className='toast'; }, 5000);
+}
+function act(name, payload, question, okMsg){
+  if(question && !confirm(question)) return;
+  fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:name, payload: payload||{}})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j.queued){ toast(okMsg || 'Запущено…'); setTimeout(tick, 1200); }
+      else { toast(j.detail || 'Ошибка', true); }
+    })
+    .catch(function(){ toast('Сервер не отвечает', true); });
+}
+
+/* ---------------------------------------------------------- overview --- */
+function renderOverview(d){
+  var h=d.host||{}, w=d.win||{}, wx=d.weather||{}, c=d.comfy||{}, hist=d.history||{};
+  var mem=h.mem||{}, gpu=(w.gpus||[])[0]||{}, svc=d.services||{};
+  var mainDisk=(h.disks||[]).filter(function(x){return x.mount==='/data';})[0]||(h.disks||[])[0]||{};
+  var cdisk=(w.disks||[])[0]||{};
+  var memP = mem.total ? (mem.used/mem.total*100) : 0;
+  var ramP = w.ram_total ? ((w.ram_total-w.ram_free)/w.ram_total*100) : 0;
+  var upSvc = svc.filter(function(s){return s.ok;}).length;
+  var html = '';
+  var act0 = d.action;
+
+  if(act0 && act0.state==='running'){
+    html += '<div class="card" style="border-color:rgba(88,196,220,.45)"><div class="lbl">Действие</div>'+
+      '<div class="big sm">'+esc(act0.detail||'выполняется…')+'</div></div><br>';
+  }
+
+  html += '<div class="grid">';
+  html += '<div class="card wide"><div class="lbl">Погода · Ачинск</div>'+
+    '<div class="wx"><div class="ic">'+wxIcon(wx.kind)+'</div><div class="t">'+(wx.ok?num(wx.temp,1)+'°':'—')+'</div>'+
+    '<div class="sub">'+(wx.ok?esc(wx.desc)+'<br>ощущается '+wx.feels+'°<br>ветер '+wx.wind+' м/с':'нет данных')+'</div></div></div>';
+
+  html += '<div class="card"><div class="lbl">Генерация · ComfyUI</div>'+
+    '<div class="big">'+(c.online?'<span class="ok-t">онлайн</span>':'<span class="crit-t">выкл</span>')+'</div>'+
+    '<div class="sub">'+(c.online?('в работе '+(c.running||0)+' · в очереди '+(c.pending||0)+'<br>VRAM '+
+      bytes((c.vram_total||0)-(c.vram_free||0))+' / '+bytes(c.vram_total||0)):'сервер не запущен')+'</div>'+
+    '<div class="btnrow" style="margin-top:auto">'+
+      (c.online
+        ? '<button class="btn danger" onclick="act(\'comfy_off\',null,\'Остановить ComfyUI?\',\'Останавливаю…\')">■ Стоп</button>'
+        : '<button class="btn good" onclick="act(\'comfy_on\',null,\'Запустить ComfyUI?\',\'Запускаю ComfyUI…\')">▶ Запуск</button>')+
+    '</div></div>';
+
+  html += '<div class="card"><div class="lbl">Сервисы</div><div class="big">'+upSvc+' / '+svc.length+'</div>'+
+    '<div class="sub">'+(svc.length?(svc.map(function(s){return '<span class="dot'+(s.ok?'':' bad')+'" title="'+esc(s.name)+'"></span>';}).join(' ')):'—')+
+    '<br>'+(svc.filter(function(s){return !s.ok;}).map(function(s){return esc(s.name);}).join(', ')||'все отвечают')+'</div></div>';
+  html += '</div>';
+
+  html += '<h2>Домашний ПК · DESKTOP-9NG209M</h2><div class="grid">';
+  if(!w.online){
+    html += '<div class="card wide"><div class="lbl">ПК выключен</div><div class="big crit-t">нет связи</div>'+
+      '<div class="sub">'+(w.error?esc(w.error):'компьютер выключен или спит')+'</div>'+
+      '<div class="btnrow" style="margin-top:auto">'+
+      '<button class="btn good" onclick="act(\'boot_os\',{os:\'windows\'},\'Разбудить ПК в Windows?\',\'Отправляю WoL…\')">⏻ Windows</button>'+
+      '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Разбудить ПК в openSUSE?\',\'Отправляю WoL…\')">⏻ openSUSE</button>'+
+      '</div></div>';
+  } else {
+    html += gauge('Процессор', w.cpu, 'uptime '+dur(w.uptime), (hist.pc_cpu||[]).slice(-60), '#58c4dc');
+    html += gauge('Видеокарта', gpu.util||0, (gpu.temp||0)+' °C · '+Math.round(gpu.power||0)+' Вт<br>VRAM '+
+      bytes((gpu.vram_used||0)*1048576)+' / '+bytes((gpu.vram_total||0)*1048576), (hist.pc_gpu||[]).slice(-60), '#9d8cff');
+    html += gauge('Память', ramP, bytes(w.ram_total-w.ram_free)+' / '+bytes(w.ram_total), (hist.pc_ram||[]).slice(-60), '#4cc38a');
+    html += gauge('Диск C:', diskUsage(cdisk), bytes(cdisk.total-cdisk.free)+' / '+bytes(cdisk.total), null, '#e6b455');
+  }
+  html += '</div>';
+
+  html += '<h2>Сервер HASTRII</h2><div class="grid">';
+  if(!h.cpu){ html += '<div class="card wide"><div class="lbl">HASTRII</div><div class="big">нет данных</div></div>'; }
+  else {
+    html += gauge('Процессор', h.cpu.cpu, 'load '+(h.load||[]).join(' / '), (hist.host_cpu||[]).slice(-60), '#58c4dc');
+    html += gauge('Память', memP, bytes(mem.used)+' / '+bytes(mem.total), (hist.host_ram||[]).slice(-60), '#4cc38a');
+    html += gauge('Диск '+esc(mainDisk.mount||''), diskUsage(mainDisk), bytes(mainDisk.used)+' / '+bytes(mainDisk.total), null, color(diskUsage(mainDisk)));
+    html += tile('Сеть', speed((h.net||{}).rx), 'отдача '+speed((h.net||{}).tx));
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ---------------------------------------------------------------- pc --- */
+function renderPC(d){
+  var h=d.host||{}, w=d.win||{}, gpu=(w.gpus||[])[0]||{}, hist=d.history||{}, s=d.settings||{};
+  var mem=h.mem||{}, html='';
+  html += '<h2>Домашний ПК</h2>';
+  if(!w.online){
+    html += '<div class="grid"><div class="card wide"><div class="lbl">Состояние</div>'+
+      '<div class="big crit-t">не отвечает по SSH</div>'+
+      '<div class="sub">'+(w.error?esc(w.error):'компьютер выключен или спит')+'</div>'+
+      '<div class="btnrow" style="margin-top:auto">'+
+      '<button class="btn good" onclick="act(\'boot_os\',{os:\'windows\'},\'Разбудить ПК в Windows?\',\'Отправляю WoL…\')">⏻ Windows</button>'+
+      '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Разбудить ПК в openSUSE?\',\'Отправляю WoL…\')">⏻ openSUSE</button>'+
+      '</div></div></div>';
+  } else {
+    var ramP = w.ram_total?((w.ram_total-w.ram_free)/w.ram_total*100):0;
+    var vramP = gpu.vram_total?(gpu.vram_used/gpu.vram_total*100):0;
+    html += '<div class="grid">';
+    html += gauge('CPU', w.cpu, 'uptime '+dur(w.uptime), (hist.pc_cpu||[]).slice(-90), '#58c4dc');
+    html += gauge('GPU', gpu.util||0, esc((gpu.name||'').replace('NVIDIA ',''))+'<br>'+(gpu.temp||0)+' °C · '+
+      Math.round(gpu.power||0)+' Вт', (hist.pc_gpu||[]).slice(-90), '#9d8cff');
+    html += gauge('RAM', ramP, bytes(w.ram_total-w.ram_free)+' / '+bytes(w.ram_total), (hist.pc_ram||[]).slice(-90), '#4cc38a');
+    html += gauge('VRAM', vramP, bytes((gpu.vram_used||0)*1048576)+' / '+bytes((gpu.vram_total||0)*1048576), (hist.pc_vram||[]).slice(-90), '#e6b455');
+    html += '</div>';
+
+    html += '<h2>Управление</h2><div class="card"><div class="btnrow">'+
+      '<button class="btn good" onclick="act(\'comfy_on\',null,\'Запустить ComfyUI?\',\'Запускаю ComfyUI…\')">▶ ComfyUI</button>'+
+      '<button class="btn danger" onclick="act(\'comfy_off\',null,\'Остановить ComfyUI?\',\'Останавливаю…\')">■ Стоп ComfyUI</button>'+
+      '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Перезагрузить в openSUSE? ПК будет недоступен ~1 мин.\',\'Переключаю…\')">↻ В openSUSE</button>'+
+      '</div><div class="sub" style="margin-top:8px">ОС по умолчанию: '+(s.default_os==='opensuse'?'openSUSE':'Windows')+' — меняется в ⚙</div></div>';
+
+    html += '<h2>Диски</h2><div class="grid">';
+    (w.disks||[]).forEach(function(dk){
+      var p = dk.total?(1-dk.free/dk.total)*100:0;
+      html += '<div class="card"><div class="lbl">'+esc(dk.mount)+'</div>'+
+        '<div class="gauges">'+ring(p)+'<div class="sub">'+bytes(dk.total-dk.free)+' / '+bytes(dk.total)+'</div></div></div>';
+    });
+    html += '</div>';
+
+    html += '<h2>Процессы</h2><div class="grid">';
+    html += '<div class="card wide">'+(w.procs_ram||[]).map(function(p){
+      return '<div class="row"><span>'+esc(p.name)+'</span><span class="n mono">'+p.mb+' МБ</span></div>';
+    }).join('')+'</div>';
+    html += '<div class="card"><div class="lbl">Сервисы на ПК</div>'+
+      '<div class="row"><span>ComfyUI</span><span class="pill '+(w.comfy_local?'ok':'bad')+'">'+(w.comfy_local?'запущен':'выключен')+'</span></div>'+
+      '<div class="row"><span>Ollama</span><span class="pill '+(w.ollama_local?'ok':'bad')+'">'+(w.ollama_local?'запущена':'выключена')+'</span></div>'+
+      '</div></div>';
+  }
+
+  html += '<h2>Сервер HASTRII</h2>';
+  if(h.cpu){
+    var memP = mem.total?(mem.used/mem.total*100):0;
+    html += '<div class="grid">';
+    html += gauge('CPU', h.cpu.cpu, 'load '+(h.load||[]).join(' / '), (hist.host_cpu||[]).slice(-90), '#58c4dc');
+    html += gauge('RAM', memP, bytes(mem.used)+' / '+bytes(mem.total), (hist.host_ram||[]).slice(-90), '#4cc38a');
+    html += tile('Swap', bytes(mem.swap_used), 'из '+bytes(mem.swap_total));
+    html += tile('Uptime', dur(h.uptime), 'сеть '+speed((h.net||{}).rx)+' ↓');
+    html += '</div>';
+    if((h.temps||[]).length){
+      html += '<div class="grid tight" style="margin-top:12px">';
+      h.temps.forEach(function(t){
+        html += '<div class="card tight"><div class="lbl">'+esc(t.name)+'</div>'+
+          '<div class="big sm '+(t.c>75?'crit-t':(t.c>65?'warn-t':''))+'">'+t.c+' °C</div></div>';
+      });
+      html += '</div>';
+    }
+    html += '<h2>Диски сервера</h2><div class="grid">';
+    (h.disks||[]).forEach(function(dk){
+      var p = diskUsage(dk);
+      html += '<div class="card"><div class="lbl">'+esc(dk.mount)+' · '+esc(dk.dev)+'</div>'+
+        '<div class="gauges">'+ring(p)+'<div class="sub">'+bytes(dk.used)+' / '+bytes(dk.total)+'</div></div></div>';
+    });
+    html += '</div>';
+  }
+  return html;
+}
+
+/* --------------------------------------------------------------- gen --- */
+function renderGen(d){
+  var c=d.comfy||{}, o=d.ollama||{}, files=d.files||[], w=d.win||{};
+  var gpu=(w.gpus||[])[0]||{}, html='';
+  html += '<div class="grid">';
+  html += '<div class="card"><div class="lbl">ComfyUI</div>'+
+    '<div class="big">'+(c.online?'<span class="ok-t">онлайн</span>':'<span class="crit-t">выключен</span>')+'</div>'+
+    '<div class="sub">'+(c.online?('версия '+esc(c.comfy_version||'—')+'<br>'+esc((c.device||'').split(':')[0])):'не отвечает на 8188')+'</div>'+
+    '<div class="btnrow" style="margin-top:auto">'+
+      (c.online
+        ? '<button class="btn danger" onclick="act(\'comfy_off\',null,\'Остановить ComfyUI?\',\'Останавливаю…\')">■ Стоп</button>'
+        : '<button class="btn good" onclick="act(\'comfy_on\',null,\'Запустить ComfyUI?\',\'Запускаю ComfyUI…\')">▶ Запустить</button>')+
+    '</div></div>';
+  html += tile('В работе', (c.running||0), c.running_id?('id '+esc(c.running_id)):'очередь пуста');
+  html += tile('В очереди', (c.pending||0), 'задач ожидает');
+  html += '<div class="card"><div class="lbl">VRAM</div><div class="gauges">'+
+    ring(c.vram_total?((c.vram_total-(c.vram_free||0))/c.vram_total*100):0, '#e6b455')+
+    '<div class="sub">'+(c.vram_total?(bytes(c.vram_total-(c.vram_free||0))+' / '+bytes(c.vram_total)):'—')+'</div></div></div>';
+  html += '</div>';
+
+  html += '<h2>Последние файлы генераций</h2>';
+  if(!files.length){
+    html += '<div class="card"><div class="sub">Список недоступен (ПК выключен или SSH не отвечает).</div></div>';
+  } else {
+    html += '<div class="files">';
+    files.forEach(function(f){
+      var ext=(f.ext||'').toLowerCase();
+      var isImg=['.png','.jpg','.jpeg','.webp'].indexOf(ext)>=0;
+      var isVid=['.mp4','.webm','.mov'].indexOf(ext)>=0;
+      var url='/media?p='+encodeURIComponent(f.rel);
+      var name=f.rel.split('/').pop();
+      var body = isImg ? '<img class="thumb" loading="lazy" src="'+url+'">'
+        : (isVid ? '<a href="'+url+'" target="_blank" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;color:#6f8aa0">▶</a>'
+                 : '<div class="thumb">'+ext.replace('.','').toUpperCase()+'</div>');
+      html += '<div class="file">'+body+
+        '<div class="meta"><b title="'+esc(name)+'">'+esc(name)+'</b><span>'+bytes((f.mb||0)*1048576)+'</span></div></div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<h2>Локальные модели · Ollama</h2><div class="grid">';
+  if(!o.online){
+    html += '<div class="card wide"><div class="lbl">Ollama</div><div class="big crit-t">не запущена</div>'+
+      '<div class="sub">порт 11434 на ПК закрыт — запустится при старте сервиса на ПК</div></div>';
+  } else {
+    html += '<div class="card wide">'+(o.models||[]).map(function(m){
+      return '<div class="row"><span>'+esc(m.name)+'</span><span class="n mono">'+bytes(m.size)+'</span></div>';
+    }).join('')+'</div>';
+    html += '<div class="card"><div class="lbl">GPU сейчас</div><div class="gauges">'+
+      ring(gpu.util||0, '#9d8cff')+'<div class="sub">'+(gpu.temp||0)+' °C<br>VRAM '+
+      bytes((gpu.vram_used||0)*1048576)+'</div></div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ---------------------------------------------------------- services --- */
+function renderServices(d){
+  var dk=d.docker||{}, svc=d.services||[], h=d.host||{}, html='';
+  var dataDisk=(h.disks||[]).filter(function(x){return x.mount==='/data';})[0];
+  if(dataDisk && diskUsage(dataDisk)>85){
+    html += '<div class="card" style="border-color:rgba(226,105,95,.45)"><div class="lbl">Внимание</div>'+
+      '<div class="big sm crit-t">/data заполнен на '+pctText(diskUsage(dataDisk))+'</div>'+
+      '<div class="sub">свободно '+bytes(dataDisk.free)+' — стоит почистить старые записи и медиа</div></div><br>';
+  }
+  html += '<h2>Адреса</h2><div class="grid">';
+  svc.forEach(function(s){
+    var st = s.state || (s.ok?'ok':'down');
+    var lblT = st==='ok' ? 'OK' : (st==='auth' ? 'закрыт' : (s.code||'нет'));
+    var clsT = st==='ok' ? 'ok-t' : (st==='auth' ? 'warn-t' : 'crit-t');
+    html += '<div class="card"><div class="lbl">'+esc(s.name)+'</div>'+
+      '<div class="big sm"><span class="'+clsT+'">'+lblT+'</span>'+
+      ' <span class="sub mono">'+(s.ms||0)+' мс</span></div>'+
+      '<div class="sub" style="word-break:break-all">'+esc(s.url.replace(/^https?:\/\//,''))+'</div></div>';
+  });
+  html += '</div>';
+
+  html += '<h2>Контейнеры · '+((dk.running||0))+' из '+((dk.total||0))+'</h2><div class="grid">';
+  html += '<div class="card wide">';
+  if(!dk.ok){
+    html += '<div class="sub">docker недоступен: '+esc(dk.error||'')+'</div>';
+  } else {
+    html += (dk.items||[]).map(function(i){
+      var cls = i.state==='running' ? (i.status.indexOf('unhealthy')>=0?'warn':'ok') : 'bad';
+      return '<div class="row"><span>'+esc(i.name)+'</span><span class="pill '+cls+'">'+esc(i.status)+'</span>'+
+        '<button class="btn" style="width:auto;padding:6px 10px;font-size:12px" '+
+        'onclick="act(\'container\',{name:\''+esc(i.name)+'\',mode:\'restart\'},\'Перезапустить '+esc(i.name)+'?\',\'Перезапускаю…\')">↻</button></div>';
+    }).join('');
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* --------------------------------------------------------------- misc --- */
+function renderMisc(d){
+  var wx=d.weather||{}, h=d.host||{}, w=d.win||{}, hist=d.history||{}, html='';
+  html += '<h2>Погода</h2><div class="grid">';
+  html += '<div class="card wide"><div class="lbl">Ачинск · сейчас</div><div class="wx">'+
+    '<div class="ic">'+wxIcon(wx.kind)+'</div><div class="t">'+(wx.ok?num(wx.temp,1)+'°':'—')+'</div>'+
+    '<div class="sub">'+(wx.ok?esc(wx.desc)+'<br>ощущается '+wx.feels+'°<br>ветер '+wx.wind+' м/с · влажность '+wx.hum+'%':'нет данных')+'</div></div>'+
+    '<div class="days">'+((wx.days||[]).map(function(day){
+      return '<div class="day"><div class="d">'+(day.date?new Date(day.date).toLocaleDateString('ru-RU',{weekday:'short'}):'')+'</div>'+
+        '<div class="v">'+day.max+'° <span class="sub">'+day.min+'°</span></div>'+
+        '<div class="d" style="margin-top:4px">'+esc(day.desc)+'</div></div>';
+    }).join(''))+'</div></div>';
+  html += '</div>';
+
+  html += '<h2>Сеть и аптайм</h2><div class="grid">';
+  var net=netOf(h);
+  html += tile('Приём', speed(net.rx), 'всего '+bytes(net.total_rx));
+  html += tile('Отдача', speed(net.tx), 'всего '+bytes(net.total_tx));
+  html += tile('HASTRII', dur(h.uptime), 'load '+(h.load||[]).join(' / '));
+  html += tile('ПК', w.online?dur(w.uptime):'—', w.online?'DESKTOP-9NG209M':'нет связи');
+  html += '</div>';
+
+  if((h.temps||[]).length){
+    html += '<h2>Температуры сервера</h2><div class="grid tight">';
+    h.temps.forEach(function(t){
+      html += '<div class="card tight"><div class="lbl">'+esc(t.name)+'</div>'+
+        '<div class="big sm '+(t.c>75?'crit-t':(t.c>65?'warn-t':''))+'">'+t.c+' °C</div></div>';
+    });
+    html += '</div>';
+  }
+  if((hist.host_cpu||[]).length>2){
+    html += '<h2>Загрузка сервера · последние 15 минут</h2><div class="card">'+
+      spark((hist.host_cpu||[]), '#58c4dc')+'</div>';
+  }
+  html += '<div class="sub" style="margin-top:16px">Обновление каждые 5 секунд · HASTRII, DESKTOP-9NG209M, ComfyUI, Docker</div>';
+  return html;
+}
+function netOf(h){ return h.net||{}; }
+
+/* ---------------------------------------------------------- settings --- */
+function renderSettings(d){
+  var s=d.settings||{}, w=d.win||{};
+  var html = '<h2>Включение ПК</h2>';
+  html += '<div class="grid"><div class="card wide">'+
+    '<div class="lbl">Система по умолчанию</div>'+
+    '<div class="sub">С неё ПК стартует по кнопке. Вторая система включается автоматически через перезагрузку (~1.5 мин).</div>'+
+    '<div class="field"><span>Грузить при включении</span>'+
+    '<select id="osSel"><option value="windows"'+(s.default_os!=='opensuse'?' selected':'')+'>Windows</option>'+
+    '<option value="opensuse"'+(s.default_os==='opensuse'?' selected':'')+'>openSUSE</option></select></div>'+
+    '<div class="btnrow"><button class="btn good" onclick="saveOs()">Сохранить</button>'+
+    '<button class="btn" onclick="act(\'boot_os\',{os:\'windows\'},\'Разбудить ПК в Windows?\',\'Отправляю WoL…\')">⏻ Windows</button>'+
+    '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Разбудить ПК в openSUSE?\',\'Отправляю WoL…\')">⏻ openSUSE</button>'+
+    '</div></div>';
+
+  html += '<div class="card"><div class="lbl">Wake-on-LAN</div>'+
+    '<div class="sub">MAC <code>'+esc(s.wol_mac||'')+'</code><br>ПК: <code>192.168.0.189</code><br>'+
+    'Состояние: '+(w.online?'<span class="ok-t">в сети</span>':'<span class="crit-t">не отвечает</span>')+'</div>'+
+    '<div class="btnrow" style="margin-top:auto">'+
+    '<button class="btn" onclick="act(\'wol\',null,null,\'Magic packet отправлен\')">Отправить пакет</button></div></div>';
+  html += '</div>';
+
+  html += '<h2>Диагностика</h2><div class="card">'+
+    '<div class="row"><span>Fast Startup (Windows)</span><span class="pill ok">выключен</span></div>'+
+    '<div class="row"><span>Адаптер в wake_armed</span><span class="pill ok">I219-V</span></div>'+
+    '<div class="row"><span>Пробуждение в BIOS</span><span class="pill warn">проверить вручную</span></div>'+
+    '<div class="sub" style="margin-top:8px">Для WoL в BIOS нужен пункт Wake on LAN / Power On By PCI-E, а ErP — выключен.</div>'+
+    '</div>';
+  return html;
+}
+function saveOs(){
+  var v = document.getElementById('osSel').value;
+  act('settings', {default_os: v}, null, 'Сохраняю…');
+}
+
+/* ------------------------------------------------------------- driver --- */
+function render(){
+  var d = state.data; if(!d) return;
+  if(d.meta){
+    var nm = d.meta.name || 'Дом';
+    var b = document.querySelector('.brand b');
+    if(b && b.textContent !== nm.toUpperCase()){ b.textContent = nm.toUpperCase(); document.title = nm; }
+    var sub = document.getElementById('sub');
+    if(sub && d.meta.demo && !sub.textContent){ sub.textContent = 'ДЕМО'; sub.className = 'demo-chip'; }
+  }
+  document.getElementById('hb').innerHTML = '<span class="dot'+((d.win&&d.win.online)?'':' bad')+'" title="ПК"></span>';
+  var p = location.pathname.replace(/\/$/,'') || '/';
+  var html;
+  if(p==='/pc') html = renderPC(d);
+  else if(p==='/gen') html = renderGen(d);
+  else if(p==='/services') html = renderServices(d);
+  else if(p==='/misc') html = renderMisc(d);
+  else if(p==='/settings') html = renderSettings(d);
+  else html = renderOverview(d);
+  var box = MAIN.parentNode, st = box.scrollTop;
+  MAIN.innerHTML = html;
+  box.scrollTop = st;
+  if(d.action && d.action.state==='error' && d.action.ts*1000 > Date.now()-8000){
+    toast(d.action.detail, true);
+  }
+}
+
+function markNav(){
+  var p = location.pathname.replace(/\/$/,'') || '/';
+  var links = document.querySelectorAll('nav a');
+  for(var i=0;i<links.length;i++){
+    links[i].className = (links[i].getAttribute('data-p')===p) ? 'on' : '';
+  }
+}
+
+function tick(){
+  fetch('/api/all', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+    state.data = j; document.body.classList.remove('stale'); render();
+  }).catch(function(){ document.body.classList.add('stale'); });
+}
+
+function clock(){
+  var n = new Date();
+  document.getElementById('clock').textContent = n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('date').textContent = n.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+}
+
+markNav(); clock(); tick();
+setInterval(tick, 5000);
+setInterval(clock, 1000);
+window.addEventListener('popstate', function(){ markNav(); render(); });
+</script>
+</body>
+</html>

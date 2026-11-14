@@ -1,0 +1,13 @@
+{
+  "server": { "name": "Демо", "subtitle": "публичный стенд дашборда" },
+  "windows": { "enabled": false },
+  "weather": { "city": "Демо-город", "lat": 56.2694, "lon": 90.4993 },
+  "services": [
+    { "name": "Медиатека", "url": "https://example.local/media" },
+    { "name": "Облако", "url": "https://example.local/cloud" },
+    { "name": "Игровой сервер", "url": "https://example.local/game" },
+    { "name": "Панель", "url": "https://example.local/panel" },
+    { "name": "Мониторинг", "url": "https://example.local/metrics" }
+  ],
+  "demo": true
+}

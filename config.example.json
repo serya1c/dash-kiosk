@@ -1,0 +1,27 @@
+{
+  "server": {
+    "name": "Дом",
+    "subtitle": "домашняя инфраструктура"
+  },
+  "windows": {
+    "enabled": true,
+    "host": "192.168.0.50",
+    "user": "user",
+    "key": "/keys/win",
+    "mac": "AA-BB-CC-DD-EE-FF",
+    "output": "C:\\Users\\user\\ComfyUI\\output",
+    "comfy_task": "ComfyUI"
+  },
+  "weather": {
+    "city": "Ачинск",
+    "lat": 56.2694,
+    "lon": 90.4993
+  },
+  "services": [
+    { "name": "Jellyfin", "url": "http://192.168.0.10:8096/health" },
+    { "name": "Nextcloud", "url": "http://127.0.0.1:7080/status.php" },
+    { "name": "Панель", "url": "http://127.0.0.1:8080/" },
+    { "name": "Внешний сайт", "url": "https://example.com/" }
+  ],
+  "demo": false
+}

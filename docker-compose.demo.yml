@@ -1,0 +1,16 @@
+# Демо-стенд: те же страницы, но данные генерируются внутри (DEMO=1).
+# Ничего реального не читается, ключи и docker.sock не нужны.
+services:
+  demo:
+    build: ./server
+    image: dash-kiosk:local
+    container_name: dash-demo
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DASH_PORT: "8092"
+      DEMO: "1"
+      DASH_CONFIG: /app/config.json
+      TZ: Europe/Moscow
+    volumes:
+      - ./demo/config.demo.json:/app/config.json:ro

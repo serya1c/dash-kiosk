@@ -1,9 +1,7 @@
-*.iml
-.gradle/
-local.properties
-.idea/
+config.json
+data/
+__pycache__/
+*.pyc
 .DS_Store
-build/
-captures/
-.externalNativeBuild
-.cxx
+.idea/
+*.iml

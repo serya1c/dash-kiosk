@@ -2,6 +2,7 @@ package pro.achplay.dash;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,16 +17,17 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 /**
- * Киоск-приложение для планшета: открывает дашборд на весь экран,
- * не даёт экрану гаснуть и переподключается при потере сети.
+ * Киоск-приложение: открывает дашборд на весь экран, не даёт экрану гаснуть,
+ * переподключается при потере сети. Адрес берётся из настроек (Prefs),
+ * долгое нажатие по экрану открывает экран настроек.
  */
 public class MainActivity extends Activity {
 
-    public static final String DASH_URL = "http://192.168.0.105:8090/";
     private static final long RETRY_MS = 5000L;
     private static final long RELOAD_MS = 6L * 60L * 60L * 1000L;
 
     private WebView web;
+    private String dashUrl;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean offlineShown = false;
 
@@ -34,7 +36,7 @@ public class MainActivity extends Activity {
         public void run() {
             if (web == null) return;
             offlineShown = false;
-            web.loadUrl(DASH_URL);
+            web.loadUrl(dashUrl);
         }
     };
 
@@ -52,6 +54,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        dashUrl = Prefs.url(this);
+        if (dashUrl.isEmpty()) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            finish();
+            return;
+        }
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
@@ -67,7 +76,7 @@ public class MainActivity extends Activity {
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setUserAgentString(s.getUserAgentString() + " HermesKiosk/1.0");
+        s.setUserAgentString(s.getUserAgentString() + " KioskDash/1.1");
 
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
@@ -90,9 +99,17 @@ public class MainActivity extends Activity {
             }
         });
 
+        web.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                return true;
+            }
+        });
+
         setContentView(web);
         goFullscreen();
-        web.loadUrl(DASH_URL);
+        web.loadUrl(dashUrl);
         handler.postDelayed(periodicReload, RELOAD_MS);
     }
 
@@ -104,7 +121,8 @@ public class MainActivity extends Activity {
                 + "<body style='margin:0;height:100vh;background:#070b10;color:#7d93a6;"
                 + "font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center'>"
                 + "<div><div style='font-size:22px;color:#e9f0f5'>Нет связи с дашбордом</div>"
-                + "<div style='font-size:14px;margin-top:10px'>192.168.0.105:8090 · повтор каждые 5 секунд</div></div>"
+                + "<div style='font-size:14px;margin-top:10px'>" + dashUrl + " · повтор каждые 5 секунд</div>"
+                + "<div style='font-size:13px;margin-top:18px;color:#4a5f70'>долгое нажатие по экрану — настройки</div></div>"
                 + "</body></html>";
         web.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
         handler.removeCallbacks(retry);
@@ -132,8 +150,16 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         goFullscreen();
-        if (web != null) web.onResume();
-        if (web != null && offlineShown) {
+        if (web == null) return;
+        String current = Prefs.url(this);
+        if (!current.isEmpty() && !current.equals(dashUrl)) {
+            dashUrl = current;
+            offlineShown = false;
+            web.loadUrl(dashUrl);
+            return;
+        }
+        web.onResume();
+        if (offlineShown) {
             handler.removeCallbacks(retry);
             handler.postDelayed(retry, 800);
         }
@@ -147,7 +173,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        // Киоск: кнопка «назад» не должна выкидывать из дашборда.
+        // Киоск: «назад» не выходит из дашборда.
     }
 
     @Override

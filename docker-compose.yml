@@ -1,0 +1,22 @@
+# Боевой режим: дашборд читает реальные метрики.
+# Скопируйте config.example.json в config.json и поправьте под себя.
+services:
+  dash:
+    build: ./server
+    image: dash-kiosk:local
+    container_name: dash
+    restart: unless-stopped
+    # host-сеть и pid нужны, чтобы видеть порты и /proc хоста
+    network_mode: host
+    pid: host
+    environment:
+      DASH_PORT: "8090"
+      DASH_CONFIG: /app/config.json
+      TZ: Europe/Moscow
+    volumes:
+      - /:/host:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config.json:/app/config.json:ro
+      - ./data:/app/data
+      # ключ для SSH к ПК (только если windows.enabled = true)
+      # - ~/.ssh/id_ed25519_pc:/keys/win:ro
