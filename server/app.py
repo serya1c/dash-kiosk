@@ -614,7 +614,7 @@ def services_loop() -> None:
     pool = ThreadPoolExecutor(max_workers=8)
     while True:
         try:
-            put("services", list(pool.map(check_one, LOCAL_SERVICES + EXT_SERVICES)))
+            put("services", list(pool.map(check_one, LOCAL_SERVICES)))
             put("docker", docker_ps())
         except Exception as exc:  # noqa: BLE001
             print("services:", exc, flush=True)
