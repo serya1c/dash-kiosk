@@ -922,9 +922,11 @@ def act_boot_os(payload: dict) -> dict:
     target = payload.get("os") if payload.get("os") in OS_ENTRIES else load_settings()["default_os"]
     default = load_settings()["default_os"]
 
+    already = win_online() if target == "windows" else bool(linux_alive())
+    if already:
+        return {"detail": f"{target} уже загружена"}
+
     if target == default:
-        if win_online() or linux_alive():
-            return {"detail": f"{target} уже загружена"}
         wol_send()
         ok = wait_until(lambda: win_online() or bool(linux_alive()), 180, 3)
         return {"ok": ok, "detail": (f"WoL отправлен, грузится {target}" if ok
