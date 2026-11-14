@@ -259,7 +259,7 @@ function renderOverview(d){
   }
 
   html += '<div class="grid">';
-  html += '<div class="card wide"><div class="lbl">Погода · Ачинск</div>'+
+  html += '<div class="card wide"><div class="lbl">Погода'+(wx.city?' · '+esc(wx.city):'')+'</div>'+
     '<div class="wx"><div class="ic">'+wxIcon(wx.kind)+'</div><div class="t">'+(wx.ok?num(wx.temp,1)+'°':'—')+'</div>'+
     '<div class="sub">'+(wx.ok?esc(wx.desc)+'<br>ощущается '+wx.feels+'°<br>ветер '+wx.wind+' м/с':'нет данных')+'</div></div></div>';
 
@@ -278,7 +278,7 @@ function renderOverview(d){
     '<br>'+(svc.filter(function(s){return !s.ok;}).map(function(s){return esc(s.name);}).join(', ')||'все отвечают')+'</div></div>';
   html += '</div>';
 
-  html += '<h2>Домашний ПК · DESKTOP-9NG209M</h2><div class="grid">';
+  html += '<h2>Домашний ПК</h2><div class="grid">';
   if(!w.online){
     html += '<div class="card wide"><div class="lbl">ПК выключен</div><div class="big crit-t">нет связи</div>'+
       '<div class="sub">'+(w.error?esc(w.error):'компьютер выключен или спит')+'</div>'+
@@ -480,7 +480,7 @@ function renderServices(d){
 function renderMisc(d){
   var wx=d.weather||{}, h=d.host||{}, w=d.win||{}, hist=d.history||{}, html='';
   html += '<h2>Погода</h2><div class="grid">';
-  html += '<div class="card wide"><div class="lbl">Ачинск · сейчас</div><div class="wx">'+
+  html += '<div class="card wide"><div class="lbl">'+(wx.city?esc(wx.city):'Погода')+' · сейчас</div><div class="wx">'+
     '<div class="ic">'+wxIcon(wx.kind)+'</div><div class="t">'+(wx.ok?num(wx.temp,1)+'°':'—')+'</div>'+
     '<div class="sub">'+(wx.ok?esc(wx.desc)+'<br>ощущается '+wx.feels+'°<br>ветер '+wx.wind+' м/с · влажность '+wx.hum+'%':'нет данных')+'</div></div>'+
     '<div class="days">'+((wx.days||[]).map(function(day){
@@ -495,7 +495,7 @@ function renderMisc(d){
   html += tile('Приём', speed(net.rx), 'всего '+bytes(net.total_rx));
   html += tile('Отдача', speed(net.tx), 'всего '+bytes(net.total_tx));
   html += tile('HASTRII', dur(h.uptime), 'load '+(h.load||[]).join(' / '));
-  html += tile('ПК', w.online?dur(w.uptime):'—', w.online?'DESKTOP-9NG209M':'нет связи');
+  html += tile('ПК', w.online?dur(w.uptime):'—', w.online?'в сети':'нет связи');
   html += '</div>';
 
   if((h.temps||[]).length){
@@ -510,7 +510,7 @@ function renderMisc(d){
     html += '<h2>Загрузка сервера · последние 15 минут</h2><div class="card">'+
       spark((hist.host_cpu||[]), '#58c4dc')+'</div>';
   }
-  html += '<div class="sub" style="margin-top:16px">Обновление каждые 5 секунд · HASTRII, DESKTOP-9NG209M, ComfyUI, Docker</div>';
+  html += '<div class="sub" style="margin-top:16px">Обновление каждые 5 секунд · сервер, ПК, ComfyUI, Docker</div>';
   return html;
 }
 function netOf(h){ return h.net||{}; }
