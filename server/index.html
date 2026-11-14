@@ -279,7 +279,10 @@ function renderOverview(d){
   html += '</div>';
 
   html += '<h2>Домашний ПК</h2><div class="grid">';
-  if(!w.online){
+  var lx = (d.linux||[]).filter(function(x){return x.online;})[0];
+  if(!w.online && lx){
+    html += linuxBlock(lx);
+  } else if(!w.online){
     html += '<div class="card wide"><div class="lbl">ПК выключен</div><div class="big crit-t">нет связи</div>'+
       '<div class="sub">'+(w.error?esc(w.error):'компьютер выключен или спит')+'</div>'+
       '<div class="btnrow" style="margin-top:auto">'+
@@ -308,6 +311,43 @@ function renderOverview(d){
 }
 
 /* ---------------------------------------------------------------- pc --- */
+function linuxBlock(l){
+  if(!l) return '';
+  if(!l.online){
+    return '<div class="card wide"><div class="lbl">'+esc(l.name)+' · Linux</div>'+
+      '<div class="big crit-t">не отвечает</div><div class="sub">'+esc(l.error||'нет SSH-ответа')+'</div></div>';
+  }
+  var memP = l.mem_total ? (l.mem_used/l.mem_total*100) : 0;
+  var g = l.gpu || {};
+  var h = '<div class="grid">';
+  h += gauge('CPU', l.cpu||0, 'load '+(l.load||[]).join(' / '), null, '#58c4dc');
+  h += gauge('RAM', memP, bytes(l.mem_used)+' / '+bytes(l.mem_total), null, '#4cc38a');
+  if(g.name){
+    h += gauge('GPU', g.util||0, (g.temp||0)+' °C · '+Math.round(g.power||0)+' Вт<br>VRAM '+
+      bytes((g.vram_used||0)*1048576)+' / '+bytes((g.vram_total||0)*1048576), null, '#9d8cff');
+  }
+  h += tile('Uptime', dur(l.uptime||0), ((l.docker||[]).length ? 'docker: '+l.docker.length+' конт.' : 'без контейнеров'));
+  h += '</div>';
+  if((l.disks||[]).length){
+    h += '<div class="grid tight" style="margin-top:12px">';
+    l.disks.forEach(function(dk){
+      var p = dk.total?(dk.used/dk.total*100):0;
+      h += '<div class="card tight"><div class="lbl">'+esc(dk.mount)+'</div>'+
+        '<div class="gauges">'+ring(p)+'<div class="sub">'+bytes(dk.used)+' / '+bytes(dk.total)+'</div></div></div>';
+    });
+    h += '</div>';
+  }
+  if((l.temps||[]).length){
+    h += '<div class="grid tight" style="margin-top:12px">';
+    l.temps.forEach(function(t){
+      h += '<div class="card tight"><div class="lbl">'+esc(t.name)+'</div>'+
+        '<div class="big sm '+(t.c>80?'crit-t':(t.c>70?'warn-t':''))+'">'+t.c+' °C</div></div>';
+    });
+    h += '</div>';
+  }
+  return h;
+}
+
 function renderPC(d){
   var h=d.host||{}, w=d.win||{}, gpu=(w.gpus||[])[0]||{}, hist=d.history||{}, s=d.settings||{};
   var mem=h.mem||{}, html='';
@@ -354,6 +394,10 @@ function renderPC(d){
       '<div class="row"><span>Ollama</span><span class="pill '+(w.ollama_local?'ok':'bad')+'">'+(w.ollama_local?'запущена':'выключена')+'</span></div>'+
       '</div></div>';
   }
+
+  (d.linux||[]).forEach(function(l){
+    html += '<h2>'+esc(l.name)+' · Linux</h2>' + linuxBlock(l);
+  });
 
   html += '<h2>Сервер HASTRII</h2>';
   if(h.cpu){

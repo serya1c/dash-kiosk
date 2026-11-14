@@ -49,6 +49,7 @@ def _default_config() -> dict:
         },
         "weather": {"city": "", "lat": 0.0, "lon": 0.0},
         "services": [],
+        "linux_hosts": [],
         "docker_actions": [],
         "comfy": {"enabled": False, "local_port": 18188, "remote_port": 8188},
         "demo": False,
@@ -720,6 +721,94 @@ def fetch_media(rel: str) -> tuple[str, str]:
     return dest, ctype
 
 
+# -------------------------------------------------------------- linux hosts ---
+
+LINUX_HOSTS = CONFIG.get("linux_hosts") or []
+
+LINUX_PROBE = r"""
+LC_ALL=C
+read -r _ u n sy i w irq sirq st _ < /proc/stat
+t1=$((u+n+sy+i+w+irq+sirq+st)); i1=$((i+w))
+sleep 0.4
+read -r _ u n sy i w irq sirq st _ < /proc/stat
+t2=$((u+n+sy+i+w+irq+sirq+st)); i2=$((i+w))
+if [ "$t2" -gt "$t1" ]; then echo "CPU|$(( (t2-t1-(i2-i1))*100/(t2-t1) ))"; else echo "CPU|0"; fi
+awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END{if(t>0) print "MEM|"t*1024"|"(t-a)*1024}' /proc/meminfo
+echo "LOAD|$(cut -d" " -f1-3 /proc/loadavg | tr " " "|")"
+echo "UP|$(cut -d. -f1 /proc/uptime)"
+df -B1 --output=source,target,used,size -x tmpfs -x devtmpfs -x efivarfs -x squashfs -x overlay 2>/dev/null |
+  awk 'NR>1 && !seen[$1]++ {print "DISK|"$2"|"$3"|"$4}'
+nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw --format=csv,noheader,nounits 2>/dev/null |
+  awk -F", " '{printf "GPU|%s|%s|%s|%s|%s|%s\n", $1,$2,$3,$4,$5,$6}'
+docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null | awk -F"|" '{print "DCK|"$1"|"$2}'
+for f in /sys/class/hwmon/hwmon*/temp*_input; do
+  [ -r "$f" ] || continue
+  v=$(cat "$f" 2>/dev/null) || continue
+  [ "$v" -gt 5000 ] && [ "$v" -lt 120000 ] || continue
+  lbl=$(cat "${f%_input}_label" 2>/dev/null || basename "$(dirname "$f")")
+  echo "TEMP|$lbl|$((v/1000))"
+done | awk -F"|" '!seen[$2]++ {print}' | head -4
+"""
+
+
+def parse_linux(host: dict, out: str) -> dict:
+    res = {"name": host.get("name") or host.get("host"), "online": True,
+           "disks": [], "temps": [], "docker": []}
+    for line in out.splitlines():
+        parts = line.strip().split("|")
+        if len(parts) < 2:
+            continue
+        key = parts[0]
+        try:
+            if key == "CPU":
+                res["cpu"] = float(parts[1])
+            elif key == "MEM":
+                res["mem_total"] = int(parts[1]); res["mem_used"] = int(parts[2])
+            elif key == "LOAD":
+                res["load"] = [float(x) for x in parts[1:4]]
+            elif key == "UP":
+                res["uptime"] = int(parts[1])
+            elif key == "DISK" and len(parts) >= 4:
+                res["disks"].append({"mount": parts[1], "used": int(parts[2]), "total": int(parts[3])})
+            elif key == "GPU" and len(parts) >= 7:
+                res["gpu"] = {"name": parts[1], "util": float(parts[2]), "vram_used": float(parts[3]),
+                              "vram_total": float(parts[4]), "temp": float(parts[5]), "power": float(parts[6])}
+            elif key == "DCK" and len(parts) >= 3:
+                res["docker"].append({"name": parts[1], "status": parts[2]})
+            elif key == "TEMP" and len(parts) >= 3:
+                res["temps"].append({"name": parts[1], "c": float(parts[2])})
+        except (ValueError, IndexError):
+            continue
+    return res
+
+
+def probe_linux(host: dict) -> dict:
+    cmd = ["ssh", "-i", host.get("key") or "/keys/opensuse",
+           "-o", "BatchMode=yes",
+           "-o", "StrictHostKeyChecking=no",
+           "-o", "UserKnownHostsFile=/dev/null",
+           "-o", "LogLevel=ERROR",
+           "-o", "ConnectTimeout=5",
+           f"{host.get('user')}@{host.get('host')}", "bash -s"]
+    try:
+        r = subprocess.run(cmd, input=LINUX_PROBE.encode(), capture_output=True, timeout=25)
+        out = r.stdout.decode("utf-8", "replace")
+        if r.returncode != 0 and not out:
+            return {"name": host.get("name") or host.get("host"), "online": False,
+                    "error": (r.stderr.decode("utf-8", "replace") or "ssh failed")[:150]}
+        return parse_linux(host, out)
+    except Exception as exc:  # noqa: BLE001
+        return {"name": host.get("name") or host.get("host"), "online": False,
+                "error": str(exc)[:150]}
+
+
+def linux_loop() -> None:
+    while True:
+        data = [probe_linux(h) for h in LINUX_HOSTS]
+        put("linux", data)
+        time.sleep(5)
+
+
 # ------------------------------------------------------------------ actions ---
 
 def wol_send(mac: str | None = None) -> str:
@@ -1097,6 +1186,8 @@ def main() -> None:
             loops.append(weather_loop)
         if WINDOWS_ENABLED:
             loops += [tunnel_loop, win_loop, win_files_loop, comfy_loop, ollama_loop]
+        if LINUX_HOSTS:
+            loops.append(linux_loop)
         for loop in loops:
             threading.Thread(target=loop, daemon=True).start()
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
