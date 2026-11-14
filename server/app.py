@@ -926,11 +926,12 @@ def act_boot_os(payload: dict) -> dict:
     if already:
         return {"detail": f"{target} уже загружена"}
 
-    if target == default:
+    if not (win_online() or linux_alive()):
         wol_send()
-        ok = wait_until(lambda: win_online() or bool(linux_alive()), 180, 3)
-        return {"ok": ok, "detail": (f"WoL отправлен, грузится {target}" if ok
-                                     else "WoL отправлен, ПК не ответил (проверьте BIOS про WoL)")}
+        if not wait_until(lambda: win_online() or bool(linux_alive()), 180, 3):
+            return {"ok": False, "detail": "WoL отправлен, ПК не ответил (проверьте BIOS про WoL)"}
+        if (win_online() if target == "windows" else bool(linux_alive())):
+            return {"detail": f"WoL отправлен, грузится {target}"}
 
     if win_online():
         return _boot_via_windows(target)
