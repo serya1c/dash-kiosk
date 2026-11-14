@@ -1027,10 +1027,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/manifest.json":
             manifest = {
-                "name": "Дом", "short_name": "Дом", "start_url": "/",
+                "name": "Дом", "short_name": "Дом", "start_url": "./",
                 "display": "fullscreen", "orientation": "landscape",
                 "background_color": "#070b10", "theme_color": "#070b10",
-                "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}],
+                "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}],
             }
             self._send(200, json.dumps(manifest, ensure_ascii=False).encode(),
                        "application/manifest+json")
