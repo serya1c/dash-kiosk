@@ -493,8 +493,7 @@ def win_loop() -> None:
                     proc.kill()
                 except Exception:  # noqa: BLE001
                     pass
-        if get("win", {}).get("online"):
-            put("win", {"online": False, "error": "поток прерван, переподключение"})
+        put("win", {"online": False, "error": "нет ответа по SSH"})
         time.sleep(3)
 
 
