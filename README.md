@@ -47,6 +47,7 @@ docker compose up -d --build
 | `windows.comfy_task` | имя задачи планировщика Windows для запуска ComfyUI |
 | `weather.city`, `lat`, `lon` | город и координаты (данные: open-meteo) |
 | `services[]` | список `{name, url}` для светофора доступности |
+| `linux_hosts[]` | другие Linux-машины по SSH: `{name, host, user, key}` — CPU/RAM/диски/GPU/температуры |
 | `demo` | `true` — генерировать данные, не читать ничего реального |
 
 Переменные окружения переопределяют конфиг: `DASH_PORT`, `DASH_CONFIG`, `WIN_HOST`,
