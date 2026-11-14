@@ -353,9 +353,10 @@ function renderPC(d){
   var mem=h.mem||{}, html='';
   html += '<h2>Домашний ПК</h2>';
   if(!w.online){
+    var lx0 = (d.linux||[]).filter(function(x){return x.online;})[0];
     html += '<div class="grid"><div class="card wide"><div class="lbl">Состояние</div>'+
-      '<div class="big crit-t">не отвечает по SSH</div>'+
-      '<div class="sub">'+(w.error?esc(w.error):'компьютер выключен или спит')+'</div>'+
+      '<div class="big '+(lx0?'warn-t':'crit-t')+'">'+(lx0?('загружена '+esc(lx0.name)):'не отвечает по SSH')+'</div>'+
+      '<div class="sub">'+(lx0?'Windows сейчас не запущена — метрики ниже с загруженной системы':(w.error?esc(w.error):'компьютер выключен или спит'))+'</div>'+
       '<div class="btnrow" style="margin-top:auto">'+
       '<button class="btn good" onclick="act(\'boot_os\',{os:\'windows\'},\'Разбудить ПК в Windows?\',\'Отправляю WoL…\')">⏻ Windows</button>'+
       '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Разбудить ПК в openSUSE?\',\'Отправляю WoL…\')">⏻ openSUSE</button>'+
