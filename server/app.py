@@ -801,6 +801,31 @@ def probe_linux(host: dict) -> dict:
                 "error": str(exc)[:150]}
 
 
+def ssh_linux(host: dict, cmd: str, timeout: int = 30) -> tuple[int, str]:
+    args = ["ssh", "-i", host.get("key") or "/keys/opensuse",
+            "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "UserKnownHostsFile=/dev/null",
+            "-o", "LogLevel=ERROR",
+            "-o", "ConnectTimeout=6",
+            f"{host.get('user')}@{host.get('host')}", cmd]
+    try:
+        r = subprocess.run(args, capture_output=True, timeout=timeout)
+        return r.returncode, (r.stdout + r.stderr).decode("utf-8", "replace").strip()
+    except Exception as exc:  # noqa: BLE001
+        return 1, str(exc)[:150]
+
+
+def linux_alive() -> dict | None:
+    for item in get("linux") or []:
+        if item.get("online"):
+            for cfg in LINUX_HOSTS:
+                if cfg.get("name") == item.get("name") or cfg.get("host") == item.get("name"):
+                    return cfg
+            return {"name": item.get("name"), "host": item.get("name")}
+    return None
+
+
 def linux_loop() -> None:
     while True:
         data = [probe_linux(h) for h in LINUX_HOSTS]
@@ -883,18 +908,7 @@ def act_container(payload: dict) -> dict:
     return {"ok": ok, "detail": f"{name}: {'работает' if ok else 'не поднялся'}"}
 
 
-def act_boot_os(payload: dict) -> dict:
-    target = payload.get("os") if payload.get("os") in OS_ENTRIES else load_settings()["default_os"]
-    default = load_settings()["default_os"]
-    if target == default:
-        wol_send()
-        ok = wait_until(win_online, 150, 3)
-        return {"ok": ok, "detail": (f"WoL отправлен, грузится {target}" if ok
-                                     else "WoL отправлен, ПК не ответил")}
-    if not win_online():
-        wol_send()
-        if not wait_until(win_online, 180, 4):
-            return {"ok": False, "detail": "ПК не поднялся: WoL мог не сработать (BIOS)"}
+def _boot_via_windows(target: str) -> dict:
     guid = OS_ENTRIES[target]
     out = ssh_run(f"bcdedit /set '{{fwbootmgr}}' bootsequence '{guid}'; "
                   f"Start-Sleep -Seconds 2; bcdedit /enum '{{fwbootmgr}}'", timeout=40)
@@ -902,6 +916,42 @@ def act_boot_os(payload: dict) -> dict:
         return {"ok": False, "detail": "не удалось задать загрузку: " + out[:150]}
     ssh_run("shutdown /r /t 5 /f", timeout=20)
     return {"ok": True, "detail": f"перезагрузка в {target}"}
+
+
+def act_boot_os(payload: dict) -> dict:
+    target = payload.get("os") if payload.get("os") in OS_ENTRIES else load_settings()["default_os"]
+    default = load_settings()["default_os"]
+
+    if target == default:
+        if win_online() or linux_alive():
+            return {"detail": f"{target} уже загружена"}
+        wol_send()
+        ok = wait_until(lambda: win_online() or bool(linux_alive()), 180, 3)
+        return {"ok": ok, "detail": (f"WoL отправлен, грузится {target}" if ok
+                                     else "WoL отправлен, ПК не ответил (проверьте BIOS про WoL)")}
+
+    if win_online():
+        return _boot_via_windows(target)
+
+    host = linux_alive()
+    if not host:
+        wol_send()
+        wait_until(lambda: win_online() or bool(linux_alive()), 180, 4)
+        if win_online():
+            return _boot_via_windows(target)
+        host = linux_alive()
+        if not host:
+            return {"ok": False, "detail": "ПК не поднялся: WoL мог не сработать (BIOS)"}
+
+    if target != "windows":
+        return {"ok": False, "detail": f"сейчас загружена Linux-система; переключение на {target} не поддерживается"}
+
+    entry = host.get("grub_windows_entry") or "Windows Boot Manager"
+    rc, out = ssh_linux(host, f'sudo -n grub2-reboot "{entry}" && echo GRUB-SET')
+    if "GRUB-SET" not in out:
+        return {"ok": False, "detail": "grub2-reboot не сработал: " + out[:150]}
+    ssh_linux(host, "sudo -n systemctl reboot", timeout=15)
+    return {"ok": True, "detail": "перезагрузка в Windows через GRUB"}
 
 
 def act_wol(payload: dict) -> dict:
