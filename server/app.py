@@ -130,6 +130,17 @@ def get(key: str, default=None):
         return STATE.get(key, default)
 
 
+CURRENT_JOB: dict = {"id": None, "name": None}
+
+
+def note(detail: str) -> None:
+    """Промежуточный статус долгого действия — его видно в баннере «Действие»."""
+    if not CURRENT_JOB.get("id"):
+        return
+    put("action", {"id": CURRENT_JOB["id"], "name": CURRENT_JOB.get("name"),
+                   "state": "running", "detail": detail, "ts": time.time()})
+
+
 def hist_push(key: str, value) -> None:
     try:
         HIST[key].append(round(float(value), 1))
@@ -957,19 +968,56 @@ def act_boot_os(payload: dict) -> dict:
     return {"ok": True, "detail": "перезагрузка в Windows через GRUB"}
 
 
+def _shutdown_windows() -> dict:
+    ssh_run("shutdown /s /t 5 /f", timeout=20)
+    ok = wait_until(lambda: not win_online(), 180, 3)
+    return {"ok": ok, "detail": "Windows выключается" if ok
+            else "команда отправлена, но ПК всё ещё отвечает"}
+
+
+def _boot_windows_from_linux(host: dict) -> dict:
+    entry = host.get("grub_windows_entry") or "Windows Boot Manager"
+    rc, out = ssh_linux(host, f'sudo -n grub2-reboot "{entry}" && echo GRUB-SET')
+    if "GRUB-SET" not in out:
+        return {"ok": False, "detail": "grub2-reboot не сработал: " + out[:120]}
+    ssh_linux(host, "sudo -n systemctl reboot", timeout=15)
+    return {"ok": True}
+
+
 def act_pc_off(payload: dict) -> dict:
     if win_online():
-        ssh_run("shutdown /s /t 5 /f", timeout=20)
-        ok = wait_until(lambda: not win_online(), 180, 3)
-        return {"ok": ok, "detail": "Windows выключается" if ok
-                else "команда отправлена, но ПК всё ещё отвечает"}
+        return _shutdown_windows()
+
     host = linux_alive()
-    if host:
+    if not host:
+        return {"ok": True, "detail": "ПК уже выключен"}
+
+    # Выключение из Linux прошивка не переводит в режим Wake-on-LAN: после
+    # такого poweroff магический пакет ПК не поднимает. Поэтому сначала
+    # перезагружаемся в Windows и выключаем уже из неё.
+    name = host.get("name") or "Linux"
+    note(f"перезагружаю {name} в Windows (~1–2 минуты)…")
+    res = _boot_windows_from_linux(host)
+    if not res.get("ok"):
+        note("переключение в Windows не удалось, выключаю напрямую из Linux…")
         ssh_linux(host, "sudo -n systemctl poweroff", timeout=15)
         ok = wait_until(lambda: not bool(linux_alive()), 180, 3)
-        return {"ok": ok, "detail": f"{host.get('name') or 'Linux'} выключается" if ok
-                else "команда отправлена, но ПК всё ещё отвечает"}
-    return {"ok": True, "detail": "ПК уже выключен"}
+        return {"ok": False, "detail": (
+            "переключение в Windows не удалось, выключил из Linux — "
+            "разбудить WoL после такого выключения не получится" if ok
+            else "команда отправлена, но ПК всё ещё отвечает")}
+
+    note("жду загрузку Windows…")
+    if not wait_until(win_online, 300, 4):
+        return {"ok": False, "detail": f"{name} перезагружена в Windows, но Windows "
+                                       "не поднялась: ПК остался включённым"}
+
+    note("Windows загрузилась, выключаю…")
+    res = _shutdown_windows()
+    if res.get("ok"):
+        return {"ok": True, "detail": "выключен из Windows — WoL готов"}
+    return {"ok": False, "detail": "Windows загрузилась, но выключить не удалось: "
+                                   + str(res.get("detail") or "")}
 
 
 def act_wol(payload: dict) -> dict:
@@ -999,6 +1047,7 @@ def action_worker() -> None:
         payload = job.get("payload") or {}
         put("action", {"id": job_id, "name": name, "state": "running",
                        "detail": "выполняется…", "ts": time.time()})
+        CURRENT_JOB["id"], CURRENT_JOB["name"] = job_id, name
         try:
             fn = ACTIONS.get(name)
             if not fn:
@@ -1010,6 +1059,8 @@ def action_worker() -> None:
         except Exception as exc:  # noqa: BLE001
             put("action", {"id": job_id, "name": name, "state": "error",
                            "detail": str(exc)[:200], "ts": time.time()})
+        finally:
+            CURRENT_JOB["id"] = CURRENT_JOB["name"] = None
 
 
 # --------------------------------------------------------------------- HTTP ---
