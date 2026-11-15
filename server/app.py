@@ -957,6 +957,21 @@ def act_boot_os(payload: dict) -> dict:
     return {"ok": True, "detail": "перезагрузка в Windows через GRUB"}
 
 
+def act_pc_off(payload: dict) -> dict:
+    if win_online():
+        ssh_run("shutdown /s /t 5 /f", timeout=20)
+        ok = wait_until(lambda: not win_online(), 180, 3)
+        return {"ok": ok, "detail": "Windows выключается" if ok
+                else "команда отправлена, но ПК всё ещё отвечает"}
+    host = linux_alive()
+    if host:
+        ssh_linux(host, "sudo -n systemctl poweroff", timeout=15)
+        ok = wait_until(lambda: not bool(linux_alive()), 180, 3)
+        return {"ok": ok, "detail": f"{host.get('name') or 'Linux'} выключается" if ok
+                else "команда отправлена, но ПК всё ещё отвечает"}
+    return {"ok": True, "detail": "ПК уже выключен"}
+
+
 def act_wol(payload: dict) -> dict:
     return {"ok": True, "detail": wol_send()}
 
@@ -967,6 +982,7 @@ def act_settings(payload: dict) -> dict:
 
 ACTIONS = {
     "wol": act_wol,
+    "pc_off": act_pc_off,
     "comfy_on": act_comfy_on,
     "comfy_off": act_comfy_off,
     "container": act_container,

@@ -328,6 +328,8 @@ function linuxBlock(l){
   }
   h += tile('Uptime', dur(l.uptime||0), ((l.docker||[]).length ? 'docker: '+l.docker.length+' конт.' : 'без контейнеров'));
   h += '</div>';
+  h += '<div class="btnrow" style="margin-top:12px">'+
+    '<button class="btn danger" onclick="act(\'pc_off\',null,\'Выключить ПК? Разбудить обратно — кнопкой Windows или openSUSE.\',\'Выключаю…\')">⏻ Выключить ПК</button></div>';
   if((l.disks||[]).length){
     h += '<div class="grid tight" style="margin-top:12px">';
     l.disks.forEach(function(dk){
@@ -376,6 +378,7 @@ function renderPC(d){
       '<button class="btn good" onclick="act(\'comfy_on\',null,\'Запустить ComfyUI?\',\'Запускаю ComfyUI…\')">▶ ComfyUI</button>'+
       '<button class="btn danger" onclick="act(\'comfy_off\',null,\'Остановить ComfyUI?\',\'Останавливаю…\')">■ Стоп ComfyUI</button>'+
       '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Перезагрузить в openSUSE? ПК будет недоступен ~1 мин.\',\'Переключаю…\')">↻ В openSUSE</button>'+
+      '<button class="btn danger" onclick="act(\'pc_off\',null,\'Выключить ПК? Разбудить обратно — кнопкой Windows или openSUSE.\',\'Выключаю…\')">⏻ Выключить ПК</button>'+
       '</div><div class="sub" style="margin-top:8px">ОС по умолчанию: '+(s.default_os==='opensuse'?'openSUSE':'Windows')+' — меняется в ⚙</div></div>';
 
     html += '<h2>Диски</h2><div class="grid">';
@@ -573,6 +576,7 @@ function renderSettings(d){
     '<div class="btnrow"><button class="btn good" onclick="saveOs()">Сохранить</button>'+
     '<button class="btn" onclick="act(\'boot_os\',{os:\'windows\'},\'Разбудить ПК в Windows?\',\'Отправляю WoL…\')">⏻ Windows</button>'+
     '<button class="btn violet" onclick="act(\'boot_os\',{os:\'opensuse\'},\'Разбудить ПК в openSUSE?\',\'Отправляю WoL…\')">⏻ openSUSE</button>'+
+    '<button class="btn danger" onclick="act(\'pc_off\',null,\'Выключить ПК? Разбудить обратно — кнопкой Windows или openSUSE.\',\'Выключаю…\')">⏻ Выключить</button>'+
     '</div></div>';
 
   html += '<div class="card"><div class="lbl">Wake-on-LAN</div>'+
